@@ -18,18 +18,37 @@ st.markdown("Aplicação para extração automática de identificação, afilia�
 def extrair_identificacao(orcid):
     url = f"{ORCID_API}/{orcid}/person"
     r = requests.get(url, headers=HEADERS)
+
     if r.status_code != 200:
         return {}
 
     p = r.json()
 
-    given_name = p.get("name", {}).get("given-names", {}).get("value")
-    family_name = p.get("name", {}).get("family-name", {}).get("value")
+    # Tratamento robusto de nome
+    name_data = p.get("name") or {}
 
+    given_name = None
+    family_name = None
+
+    if isinstance(name_data, dict):
+        given_names_dict = name_data.get("given-names")
+        if isinstance(given_names_dict, dict):
+            given_name = given_names_dict.get("value")
+
+        family_name_dict = name_data.get("family-name")
+        if isinstance(family_name_dict, dict):
+            family_name = family_name_dict.get("value")
+
+    # Tratamento robusto de país
     addresses = p.get("addresses", {}).get("address", [])
     country = None
-    if addresses:
-        country = addresses[0].get("country", {}).get("value")
+
+    if isinstance(addresses, list) and len(addresses) > 0:
+        first_address = addresses[0]
+        if isinstance(first_address, dict):
+            country_data = first_address.get("country")
+            if isinstance(country_data, dict):
+                country = country_data.get("value")
 
     return {
         "orcid": orcid,
@@ -37,6 +56,7 @@ def extrair_identificacao(orcid):
         "family_name": family_name,
         "country": country
     }
+
 
 
 def extrair_obras(orcid):
