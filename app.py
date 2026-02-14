@@ -49,12 +49,18 @@ def extrair_obras(orcid):
 
     for group in r.json().get("group", []):
         for w in group.get("work-summary", []):
+
+            # DOI
             doi = None
             for eid in w.get("external-ids", {}).get("external-id", []):
                 if eid.get("external-id-type") == "doi":
                     doi = eid.get("external-id-value")
 
-            year = w.get("publication-date", {}).get("year", {}).get("value")
+            # Ano de publicação (tratamento robusto)
+            pub_date = w.get("publication-date")
+            year = None
+            if pub_date and pub_date.get("year"):
+                year = pub_date["year"].get("value")
 
             obras.append({
                 "titulo": w.get("title", {}).get("title", {}).get("value"),
